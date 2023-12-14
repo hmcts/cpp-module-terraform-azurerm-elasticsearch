@@ -55,8 +55,8 @@ resource "azurerm_availability_set" "es-data-az-set" {
   name                         = "es-data-az-set"
   location                     = var.location
   resource_group_name          = var.es_rg
-  platform_fault_domain_count  = 2
-  platform_update_domain_count = 2
+  platform_fault_domain_count  = var.platform_fault_domain_count
+  platform_update_domain_count = var.platform_update_domain_count
   managed                      = true
 }
 

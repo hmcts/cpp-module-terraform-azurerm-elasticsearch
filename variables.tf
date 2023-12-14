@@ -138,3 +138,13 @@ variable "priv_dns_zone" {
   type        = string
   description = "The private dns zone name"
 }
+
+variable "platform_fault_domain_count" {
+  type        = number
+  description = "The number of fault domain count for the availability set - upto 3 as of today"
+}
+
+variable "platform_update_domain_count" {
+  type        = number
+  description = "The number of update domain counts for the availability set - upto 20 as of today"
+}

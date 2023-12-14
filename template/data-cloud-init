@@ -63,9 +63,7 @@ write_files:
       fi
       sudo sed -i "s/network.host: 0.0.0.0/network.host: $ip_eth0/g" /etc/elasticsearch/elasticsearch.yml
       sudo sed -i "s/node.name: hostname/node.name: $host_name.dev.nl.cjscp.org.uk/g" /etc/elasticsearch/elasticsearch.yml
-      #
-      echo "cluster.initial_master_nodes: $master_node_list" >>/home/packer/file.yml
-      echo "discovery.seed_hosts: $data_node_list" >>/home/packer/file.yml
+
 runcmd:
   - echo "-Djna.tmpdir=/var/lib/elasticsearch/tmp">> /etc/elasticsearch/jvm.options
   - [ sh, -xc, "/bin/bash /home/packer/post_es.sh" ]
