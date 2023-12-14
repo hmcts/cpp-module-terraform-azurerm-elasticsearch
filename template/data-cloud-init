@@ -1,0 +1,74 @@
+#cloud-config
+bootcmd:
+  - until [ -e /dev/disk/azure/scsi1/lun0 ]; do sleep 2; done
+disk_setup:
+  /dev/disk/azure/scsi1/lun0:
+    table_type: gpt
+    layout: True
+    overwrite: False
+fs_setup:
+  - device: /dev/disk/azure/scsi1/lun0
+    partition: 1
+    filesystem: ext4
+mounts:
+  - ["/dev/disk/azure/scsi1/lun0-part1", "/var/data/elasticsearch", ext4, "defaults,noexec,nofail"]
+package_update: true
+packages:
+  - vim
+  - less
+  - net-tools
+  - host
+  - jq
+write_files:
+  - owner: elasticsearch:elasticsearch
+    path: /etc/elasticsearch/elasticsearch.yml
+    content: |
+      cluster.name: ${es_cluster}
+      node.name: hostname
+      network.host: 0.0.0.0
+      http.port: ${http_port}
+      transport.port: ${transport_port}
+      xpack.security.enabled: ${security_enabled}
+      xpack.security.enrollment.enabled: ${security_enrollment_enabled}
+      path.data: ${elasticsearch_data_dir}
+      path.logs: ${elasticsearch_logs_dir}
+      xpack.security.http.ssl:
+        enabled: false
+      xpack.security.transport.ssl:
+        enabled: false
+  - owner: packer:packer
+    path: /home/packer/post_es.sh
+    content: |
+      #!/bin/bash
+      set -x
+      ip_eth0=`ip addr | grep eth0 | grep inet | awk '{print $2}' | cut -d / -f 1`
+      host_name=`hostname`
+
+      master_node_count=$(( ${master_count} - 1 ))
+      data_node_count=$(( ${data_count} - 1 ))
+      master_node_list=$(for i in $( eval echo {0..$master_node_count} ); do echo -ne "${master_host_prefix}-$i.${priv_dns_zone}, "; done | sed -e 's/^/ [ /g' -e 's/, $/ ]/g')
+
+      # 
+      a=$(for i in $( eval echo {0..$master_node_count} ); do echo -ne "${master_host_prefix}-$i.${priv_dns_zone}, "; done)
+      b=$(for j in $( eval echo {0..$data_node_count} ); do echo -ne "${data_host_prefix}-$j.${priv_dns_zone}, "; done)
+      discovery_node_list=$(  echo  $a  $b | sed -e 's/^/ [ /g' -e 's/,$/ ]/g' )
+
+      if [ ${data} == "true" ] && [ ${master} == "false"  ]; then
+      echo "node.roles: [ data ]" >>/etc/elasticsearch/elasticsearch.yml
+      echo "cluster.initial_master_nodes: $master_node_list" >>/etc/elasticsearch/elasticsearch.yml
+      echo "discovery.seed_hosts: $discovery_node_list" >>/etc/elasticsearch/elasticsearch.yml
+      # Mount the required data disk and setup permissions
+      chown -R elasticsearch:elasticsearch /var/data/elasticsearch
+      sudo mount -a
+      fi
+      sudo sed -i "s/network.host: 0.0.0.0/network.host: $ip_eth0/g" /etc/elasticsearch/elasticsearch.yml
+      sudo sed -i "s/node.name: hostname/node.name: $host_name.dev.nl.cjscp.org.uk/g" /etc/elasticsearch/elasticsearch.yml
+      #
+      echo "cluster.initial_master_nodes: $master_node_list" >>/home/packer/file.yml
+      echo "discovery.seed_hosts: $data_node_list" >>/home/packer/file.yml
+runcmd:
+  - echo "-Djna.tmpdir=/var/lib/elasticsearch/tmp">> /etc/elasticsearch/jvm.options
+  - [ sh, -xc, "/bin/bash /home/packer/post_es.sh" ]
+  - sleep 10
+  - sudo systemctl enable elasticsearch
+  - sudo systemctl restart elasticsearch
