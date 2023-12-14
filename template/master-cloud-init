@@ -43,7 +43,7 @@ write_files:
       set -x
       ip_eth0=`ip addr | grep eth0 | grep inet | awk '{print $2}' | cut -d / -f 1`
       host_name=`hostname`
-      
+
       master_node_count=$(( ${master_count} - 1 ))
       data_node_count=$(( ${data_count} - 1 ))
       master_node_list=$(for i in $( eval echo {0..$master_node_count} ); do echo -ne "${master_host_prefix}-$i.${priv_dns_zone}, "; done | sed -e 's/^/ [ /g' -e 's/, $/ ]/g')

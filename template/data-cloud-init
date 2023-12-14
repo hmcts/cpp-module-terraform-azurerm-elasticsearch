@@ -48,7 +48,7 @@ write_files:
       data_node_count=$(( ${data_count} - 1 ))
       master_node_list=$(for i in $( eval echo {0..$master_node_count} ); do echo -ne "${master_host_prefix}-$i.${priv_dns_zone}, "; done | sed -e 's/^/ [ /g' -e 's/, $/ ]/g')
 
-      # 
+      #
       a=$(for i in $( eval echo {0..$master_node_count} ); do echo -ne "${master_host_prefix}-$i.${priv_dns_zone}, "; done)
       b=$(for j in $( eval echo {0..$data_node_count} ); do echo -ne "${data_host_prefix}-$j.${priv_dns_zone}, "; done)
       discovery_node_list=$(  echo  $a  $b | sed -e 's/^/ [ /g' -e 's/,$/ ]/g' )
