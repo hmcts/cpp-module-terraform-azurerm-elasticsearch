@@ -1,0 +1,20 @@
+name: CPP Azure ACR Module
+trigger: none
+pr:
+  - main
+
+resources:
+  repositories:
+    - repository: cppAzureDevOpsTemplates
+      type: github
+      name: hmcts/cpp-azure-devops-templates
+      ref: 'main'
+      endpoint: 'hmcts'
+
+extends:
+  template: pipelines/terratest.yaml@cppAzureDevOpsTemplates
+  parameters:
+    agentPool: "MDV-ADO-AGENTS-01"
+    azureServiceConnection: "ado_nonlive_workload_identity"
+    terratestTimeout: "30"
+    tfversion: 1.5.3
